@@ -3,6 +3,7 @@ import Crush.Design
 import Crush.Existence
 import Crush.Potential
 import Crush.TopR
+import Crush.Rank
 import Crush.RandomTop
 import Crush.Iid
 import Crush.Gumbel
