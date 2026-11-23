@@ -72,4 +72,146 @@ theorem integrable_topSum (hG : ∀ i, Measurable fun ω => G ω i)
   rw [Real.norm_eq_abs]
   exact abs_topSum_le hr (θ + G ω)
 
+
+section Potential
+
+variable [IsProbabilityMeasure μ] (hG : ∀ i, Measurable fun ω => G ω i)
+  (hGi : ∀ i, Integrable (fun ω => G ω i) μ)
+include hG hGi
+
+omit [DecidableEq ι] in
+/-- Adding `c` to every `θ i` adds `r * c` to the potential. -/
+theorem potential_add_const (θ : ι → ℝ) (c : ℝ) :
+    potential hr μ G (fun i => θ i + c) = potential hr μ G θ + r * c := by
+  unfold potential
+  have h : ∀ ω, topSum r hr ((fun i => θ i + c) + G ω) = topSum r hr (θ + G ω) + r * c := by
+    intro ω
+    have e : ((fun i => θ i + c) + G ω) = fun i => (θ + G ω) i + c := by
+      funext i
+      simp only [Pi.add_apply]
+      ring
+    rw [e, topSum_add_const]
+  simp_rw [h]
+  rw [integral_add (integrable_topSum hr μ hG hGi θ) (integrable_const _), integral_const]
+  simp
+
+omit [DecidableEq ι] in
+/-- The potential is at least the sum of `θ` over any set of `r` items, up to
+a constant. -/
+theorem sum_sub_le_potential (θ : ι → ℝ) (S : Finset ι) (hS : S.card = r) :
+    ∑ i ∈ S, θ i - ∫ ω, ∑ i, |G ω i| ∂μ ≤ potential hr μ G θ := by
+  have hb : Integrable (fun ω => ∑ i, |G ω i|) μ :=
+    integrable_finsetSum _ fun i _ => (hGi i).abs
+  have hSm : S ∈ rsets ι r := Finset.mem_powersetCard.2 ⟨Finset.subset_univ S, hS⟩
+  have key : ∫ ω, (∑ i ∈ S, θ i - ∑ i, |G ω i|) ∂μ ≤ ∫ ω, topSum r hr (θ + G ω) ∂μ := by
+    refine integral_mono ((integrable_const _).sub hb) (integrable_topSum hr μ hG hGi θ)
+      fun ω => ?_
+    have h1 := score_le_topSum hr (θ + G ω) hSm
+    have h2 : -(∑ i, |G ω i|) ≤ ∑ i ∈ S, G ω i := by
+      calc -(∑ i, |G ω i|) ≤ -(∑ i ∈ S, |G ω i|) :=
+            neg_le_neg (Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ S)
+              fun _ _ _ => abs_nonneg _)
+        _ = ∑ i ∈ S, -|G ω i| := by rw [Finset.sum_neg_distrib]
+        _ ≤ ∑ i ∈ S, G ω i := Finset.sum_le_sum fun i _ => neg_abs_le _
+    rw [score_add] at h1
+    simp only [score] at h1
+    show ∑ i ∈ S, θ i - ∑ i, |G ω i| ≤ topSum r hr (θ + G ω)
+    linarith
+  rw [integral_sub (integrable_const _) hb, integral_const] at key
+  simpa [potential] using key
+
+omit [DecidableEq ι] in
+theorem potential_sub_le (θ θ' : ι → ℝ) :
+    potential hr μ G θ - potential hr μ G θ' ≤ ∑ i, |θ i - θ' i| := by
+  unfold potential
+  rw [← integral_sub (integrable_topSum hr μ hG hGi θ) (integrable_topSum hr μ hG hGi θ')]
+  have key : ∫ ω, (topSum r hr (θ + G ω) - topSum r hr (θ' + G ω)) ∂μ ≤
+      ∫ _ω, (∑ i, |θ i - θ' i|) ∂μ := by
+    refine integral_mono ((integrable_topSum hr μ hG hGi θ).sub
+      (integrable_topSum hr μ hG hGi θ')) (integrable_const _) fun ω => ?_
+    have := topSum_sub_le hr (θ + G ω) (θ' + G ω)
+    simpa using this
+  rw [integral_const] at key
+  simpa using key
+
+omit [DecidableEq ι] in
+theorem continuous_potential : Continuous (potential hr μ G) := by
+  have key : ∀ a b : ι → ℝ, ∑ i, |a i - b i| ≤ Fintype.card ι * dist a b := fun a b => by
+    calc ∑ i, |a i - b i| ≤ ∑ _i : ι, dist a b :=
+          Finset.sum_le_sum fun i _ => by
+            rw [← Real.dist_eq]; exact dist_le_pi_dist a b i
+      _ = Fintype.card ι * dist a b := by simp
+  refine (LipschitzWith.of_dist_le_mul (K := Fintype.card ι) fun θ θ' => ?_).continuous
+  rw [Real.dist_eq, abs_le]
+  have h1 := potential_sub_le hr μ hG hGi θ θ'
+  have h2 := potential_sub_le hr μ hG hGi θ' θ
+  have k1 := key θ θ'
+  have k2 := key θ' θ
+  rw [dist_comm] at k2
+  push_cast
+  constructor <;> linarith
+
+omit hGi in
+/-- The event that `i` is chosen. -/
+theorem measurableSet_inTop (θ : ι → ℝ) (i : ι) :
+    MeasurableSet {ω | inTop r (θ + G ω) i} := by
+  have h : {ω | inTop r (θ + G ω) i} =
+      ⋃ S ∈ (rsets ι r).filter (i ∈ ·), ⋂ T ∈ rsets ι r,
+        {ω | score (θ + G ω) T ≤ score (θ + G ω) S} := by
+    ext ω
+    simp only [Set.mem_setOf_eq, inTop, IsTop, Set.mem_iUnion, Set.mem_iInter,
+      Finset.mem_filter, exists_prop]
+    constructor
+    · rintro ⟨S, ⟨hS, hmax⟩, hi⟩
+      exact ⟨S, ⟨hS, hi⟩, hmax⟩
+    · rintro ⟨S, ⟨hS, hi⟩, hmax⟩
+      exact ⟨S, ⟨hS, hmax⟩, hi⟩
+  rw [h]
+  exact Finset.measurableSet_biUnion _ fun S _ => Finset.measurableSet_biInter _ fun T _ =>
+    measurableSet_le (measurable_score hG θ T) (measurable_score hG θ S)
+
+open scoped Classical in
+omit hGi in
+theorem measurable_indicator_inTop (θ : ι → ℝ) (i : ι) (c : ℝ) :
+    Measurable fun ω => if inTop r (θ + G ω) i then c else 0 :=
+  Measurable.ite (measurableSet_inTop hG θ i) measurable_const measurable_const
+
+open scoped Classical in
+omit hGi in
+theorem integrable_indicator_inTop (θ : ι → ℝ) (i : ι) (c : ℝ) :
+    Integrable (fun ω => if inTop r (θ + G ω) i then c else 0) μ := by
+  refine (integrable_const |c|).mono' (measurable_indicator_inTop hG θ i c).aestronglyMeasurable
+    (ae_of_all _ fun ω => ?_)
+  split_ifs
+  · exact le_of_eq (Real.norm_eq_abs c)
+  · simp
+
+/-- **The inclusion probabilities are a subgradient of the potential**, if
+ties have probability 0. -/
+theorem potential_add_le (hnt : ∀ θ : ι → ℝ, ∀ᵐ ω ∂μ, NoTies r (θ + G ω)) (θ h : ι → ℝ) :
+    potential hr μ G θ + ∑ i, inclusion μ G r θ i * h i ≤ potential hr μ G (θ + h) := by
+  classical
+  have hsum : ∑ i, inclusion μ G r θ i * h i =
+      ∫ ω, ∑ i, (if inTop r (θ + G ω) i then h i else 0) ∂μ := by
+    rw [integral_finsetSum _ fun i _ => integrable_indicator_inTop μ hG θ i (h i)]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    unfold inclusion
+    rw [← integral_mul_const]
+    refine integral_congr_ae (ae_of_all _ fun ω => ?_)
+    by_cases hc : inTop r (θ + G ω) i <;> simp [hc]
+  have hint : Integrable (fun ω => ∑ i, (if inTop r (θ + G ω) i then h i else 0)) μ :=
+    integrable_finsetSum _ fun i _ => integrable_indicator_inTop μ hG θ i (h i)
+  rw [hsum]
+  unfold potential
+  rw [← integral_add (integrable_topSum hr μ hG hGi θ) hint]
+  refine integral_mono_ae ((integrable_topSum hr μ hG hGi θ).add hint)
+    (integrable_topSum hr μ hG hGi (θ + h)) ?_
+  filter_upwards [hnt θ] with ω hω
+  have key := topSum_add_le hr hω h
+  have e : θ + h + G ω = θ + G ω + h := by abel
+  rw [e]
+  convert key using 3
+
+end Potential
+
 end Crush
