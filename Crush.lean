@@ -6,3 +6,4 @@ import Crush.TopR
 import Crush.RandomTop
 import Crush.Iid
 import Crush.Gumbel
+import Crush.Sequential

@@ -14,10 +14,15 @@ Machine-checked statements about CRUSH, in Lean 4 with Mathlib. A pilot.
 | `Crush/RandomTop.lean` | For random values with integrable entries and ties of probability 0, the expected largest sum is such a potential, so choosing the `r` largest of `θ i + G i` reaches every interior set of inclusion probabilities (`Crush.exists_inclusion_eq`). |
 | `Crush/Iid.lean` | Independent values with a common law in which no single value has positive probability almost never tie (`Crush.ae_noTies`); with a mean, the theorem above applies (`Crush.exists_inclusion_eq_iid`). |
 
-Still to do for "flat weights exist for CRUSH": (1) the Gumbel law, minus the
-logarithm of an exponential variable, has a mean and no atoms; (2) choosing the
-`r` largest of `log w i + Gumbel` is CRUSH's draw-and-retry (successive
-sampling).
+| `Crush/Gumbel.lean` | The law of `-log E` for an exponential `E` is a probability measure with a mean and no point masses, so the theorem holds for Gumbel values (`Crush.exists_inclusion_eq_gumbel`). |
+| `Crush/Sequential.lean` | CRUSH's draw-and-retry as a recursive definition (`Crush.seqIncl`), and the final statement **conditional on** `Crush.ClockBridge`: weights exist for every interior set of inclusion probabilities (`Crush.exists_weights_of_clockBridge`). |
+
+**Not proved:** `Crush.ClockBridge`, that the `r` largest of `log w i + Gumbel`
+are the items of `r` successive draws in proportion to `w`. It is a hypothesis
+of the last theorem, not an axiom. Planned proof: the first clock to ring is
+item `j` with probability `w j / W`, and given that, the order of the others
+does not depend on it (memorylessness of exponential clocks), which gives the
+recursion that defines `seqIncl`.
 
 No `sorry`; the theorems depend only on Lean's standard axioms (`propext`,
 `Classical.choice`, `Quot.sound`).
