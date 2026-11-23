@@ -11,10 +11,13 @@ Machine-checked statements about CRUSH, in Lean 4 with Mathlib. A pilot.
 | `Crush/Potential.lean` | The analytic half of "flat weights exist": if the inclusion probabilities are a continuous subgradient of a potential that grows like the sum of the `r` largest, every target strictly between 0 and 1 that adds up to `r` is reached (`Crush.exists_incl_eq`). |
 | `Crush/TopR.lean` | Choosing the `r` largest for one vector: the chosen set is a subgradient of the largest sum where there are no ties, plus bounds. The deterministic input to the next step. |
 
-Still to do for "flat weights exist for CRUSH": (1) for random values with no
-ties, the expected largest sum is such a potential (integration, dominated
-convergence); (2) independent Gumbel values have no ties; (3) choosing the `r`
-largest of `log w i + Gumbel` is CRUSH's draw-and-retry (successive sampling).
+| `Crush/RandomTop.lean` | For random values with integrable entries and ties of probability 0, the expected largest sum is such a potential, so choosing the `r` largest of `θ i + G i` reaches every interior set of inclusion probabilities (`Crush.exists_inclusion_eq`). |
+| `Crush/Iid.lean` | Independent values with a common law in which no single value has positive probability almost never tie (`Crush.ae_noTies`); with a mean, the theorem above applies (`Crush.exists_inclusion_eq_iid`). |
+
+Still to do for "flat weights exist for CRUSH": (1) the Gumbel law, minus the
+logarithm of an exponential variable, has a mean and no atoms; (2) choosing the
+`r` largest of `log w i + Gumbel` is CRUSH's draw-and-retry (successive
+sampling).
 
 No `sorry`; the theorems depend only on Lean's standard axioms (`propext`,
 `Classical.choice`, `Quot.sound`).
