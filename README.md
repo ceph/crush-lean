@@ -15,14 +15,29 @@ Machine-checked statements about CRUSH, in Lean 4 with Mathlib. A pilot.
 | `Crush/Iid.lean` | Independent values with a common law in which no single value has positive probability almost never tie (`Crush.ae_noTies`); with a mean, the theorem above applies (`Crush.exists_inclusion_eq_iid`). |
 
 | `Crush/Gumbel.lean` | The law of `-log E` for an exponential `E` is a probability measure with a mean and no point masses, so the theorem holds for Gumbel values (`Crush.exists_inclusion_eq_gumbel`). |
-| `Crush/Sequential.lean` | CRUSH's draw-and-retry as a recursive definition (`Crush.seqIncl`), and the final statement **conditional on** `Crush.ClockBridge`: weights exist for every interior set of inclusion probabilities (`Crush.exists_weights_of_clockBridge`). |
+| `Crush/Sequential.lean` | CRUSH's draw-and-retry as a recursive definition (`Crush.seqIncl`), the statement `Crush.ClockBridge` that it agrees with "the `r` largest of `log w i` + Gumbel", and what follows from that statement (`Crush.exists_weights_of_clockBridge`). |
+| `Crush/Rank.lean` | With distinct values, an item is among the `r` largest exactly when fewer than `r` items have a larger value (`Crush.inTop_iff_card_lt`). |
+| `Crush/Clock.lean` | Independent exponential clocks: memorylessness of one (`Crush.expMeasure_shift`) and of the family (`Crush.pi_shift`), integration over one coordinate (`Crush.pi_eq_lintegral_update`), `E exp(-cX) = 1/(1+c)`. |
+| `Crush/Bridge.lean` | Clock `j` rings first with probability `w j / W`, independently of the order of the others (`Crush.clocks_firstIn_inter`); hence the recursion of `seqIncl` (`Crush.clocks_early`), `Crush.clockBridge`, and the final theorem. |
 
-**Not proved:** `Crush.ClockBridge`, that the `r` largest of `log w i + Gumbel`
-are the items of `r` successive draws in proportion to `w`. It is a hypothesis
-of the last theorem, not an axiom. Planned proof: the first clock to ring is
-item `j` with probability `w j / W`, and given that, the order of the others
-does not depend on it (memorylessness of exponential clocks), which gives the
-recursion that defines `seqIncl`.
+**Final theorem** (`Crush.exists_weights`, no hypotheses left, no `sorry`;
+`#print axioms` lists only `propext`, `Classical.choice`, `Quot.sound`):
+
+```lean
+theorem exists_weights {r : ℕ} (π : ι → ℝ) (h0 : ∀ i, 0 < π i) (h1 : ∀ i, π i < 1)
+    (hsum : ∑ i, π i = r) :
+    ∃ w : ι → ℝ, (∀ i, 0 < w i) ∧ ∀ i, seqIncl w r Finset.univ i = π i
+```
+
+For any inclusion probabilities strictly between 0 and 1 that add up to `r`,
+there are positive weights with which picking `r` distinct items one after the
+other, in proportion to the weights among the items not yet picked, gives item
+`i` the probability `π i`. This is the existence of a flat weight-set that
+corrects the multi-pick anomaly.
+
+Not covered: uniqueness of the weights up to scale, the boundary cases
+(`π i = 1`), positional weight-sets, and anything about the C code or the
+numerical solver.
 
 No `sorry`; the theorems depend only on Lean's standard axioms (`propext`,
 `Classical.choice`, `Quot.sound`).

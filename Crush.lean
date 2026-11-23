@@ -9,3 +9,4 @@ import Crush.Iid
 import Crush.Gumbel
 import Crush.Sequential
 import Crush.Clock
+import Crush.Bridge

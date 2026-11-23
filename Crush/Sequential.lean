@@ -19,9 +19,9 @@ among the items not yet picked, in proportion to their weights. So:
 `i` the value `log (w i)` plus an independent Gumbel variable and take the `r`
 largest. That the two agree is the classical fact that the order in which
 independent exponential clocks ring is the order of successive draws in
-proportion to their rates. It is stated here as `Crush.ClockBridge` and is
-**not proved**. `Crush.exists_weights_of_clockBridge` is what follows from it:
-weights for every interior set of inclusion probabilities.
+proportion to their rates. It is stated here as `Crush.ClockBridge` and proved
+in `Crush/Bridge.lean`. `Crush.exists_weights_of_clockBridge` is what follows
+from it: weights for every interior set of inclusion probabilities.
 -/
 
 namespace Crush
