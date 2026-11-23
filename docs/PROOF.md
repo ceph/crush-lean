@@ -193,9 +193,9 @@ item has exactly `1 / r` of the weight.
 
 ## 9. What is not proved
 
-* **Uniqueness.** The weights are unique up to a common factor (the potential
-  is strictly convex in the directions that matter), but this is not
-  formalised.
+* **Uniqueness.** One expects the weights to be unique up to a common factor
+  (the potential should be strictly convex apart from that direction). This
+  is neither proved nor formalised here.
 * **The boundary**, `π i = 1` for some item: it needs an infinite weight
   ratio, so no finite weights exist there; not formalised.
 * **Positional weight-sets** (a different weight per replica position, which
