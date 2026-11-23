@@ -8,6 +8,14 @@ Machine-checked statements about CRUSH, in Lean 4 with Mathlib. A pilot.
 | `Crush/Design.lean` | Any way of putting each input on `r` distinct items is a probability on `r`-subsets. Its inclusion probabilities add up to `r` and none exceeds 1, so no placement can give an item more than `1/r` of the data. |
 | `Crush/Existence.lean` | The converse: for any inclusion probabilities in `[0, 1]` that add up to `r`, a placement exists. Hence: data in proportion to the weights is possible **iff** no item has more than `1/r` of the weight (`Crush.Design.exists_proportional_iff`). |
 
+| `Crush/Potential.lean` | The analytic half of "flat weights exist": if the inclusion probabilities are a continuous subgradient of a potential that grows like the sum of the `r` largest, every target strictly between 0 and 1 that adds up to `r` is reached (`Crush.exists_incl_eq`). |
+| `Crush/TopR.lean` | Choosing the `r` largest for one vector: the chosen set is a subgradient of the largest sum where there are no ties, plus bounds. The deterministic input to the next step. |
+
+Still to do for "flat weights exist for CRUSH": (1) for random values with no
+ties, the expected largest sum is such a potential (integration, dominated
+convergence); (2) independent Gumbel values have no ties; (3) choosing the `r`
+largest of `log w i + Gumbel` is CRUSH's draw-and-retry (successive sampling).
+
 No `sorry`; the theorems depend only on Lean's standard axioms (`propext`,
 `Classical.choice`, `Quot.sound`).
 
