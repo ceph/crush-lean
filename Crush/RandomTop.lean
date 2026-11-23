@@ -16,7 +16,7 @@ continuity of `inclusion`.
 
 namespace Crush
 
-open Finset MeasureTheory
+open Finset MeasureTheory Filter Topology
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι] {r : ℕ} (hr : (rsets ι r).Nonempty)
 variable {Ω : Type*} [MeasurableSpace Ω] (μ : Measure Ω) (G : Ω → ι → ℝ)
@@ -212,6 +212,56 @@ theorem potential_add_le (hnt : ∀ θ : ι → ℝ, ∀ᵐ ω ∂μ, NoTies r (
   rw [e]
   convert key using 3
 
+include hr in
+/-- **The inclusion probabilities are continuous**, if ties have probability
+0: where there is no tie the choice does not change nearby. -/
+theorem continuous_inclusion (hnt : ∀ θ : ι → ℝ, ∀ᵐ ω ∂μ, NoTies r (θ + G ω)) :
+    Continuous (inclusion μ G r) := by
+  classical
+  refine continuous_pi fun i => ?_
+  rw [continuous_iff_seqContinuous]
+  intro θs θ hθ
+  show Tendsto (fun n => inclusion μ G r (θs n) i) atTop (𝓝 (inclusion μ G r θ i))
+  unfold inclusion
+  refine tendsto_integral_of_dominated_convergence (fun _ => 1)
+    (fun n => (measurable_indicator_inTop hG (θs n) i 1).aestronglyMeasurable)
+    (integrable_const _)
+    (fun n => ae_of_all _ fun ω => by
+      by_cases hc : inTop r (θs n + G ω) i <;> simp [hc]) ?_
+  filter_upwards [hnt θ] with ω hω
+  obtain ⟨ε, hε, hloc⟩ := exists_inTop_iff_of_noTies hr hω
+  have hev : ∀ᶠ n in atTop, ∀ j, |θs n j - θ j| < ε := by
+    rw [Filter.eventually_all]
+    intro j
+    have hj : Tendsto (fun n => θs n j) atTop (𝓝 (θ j)) := (tendsto_pi_nhds.1 hθ) j
+    have := (Metric.tendsto_nhds.1 hj) ε hε
+    simpa [Real.dist_eq] using this
+  refine tendsto_const_nhds.congr' ?_
+  filter_upwards [hev] with n hn
+  have hclose : ∀ j, |(θs n + G ω) j - (θ + G ω) j| < ε := fun j => by simpa using hn j
+  have := hloc (θs n + G ω) hclose i
+  by_cases hc : inTop r (θ + G ω) i <;> simp [hc, this]
+
 end Potential
+
+/-- **Choosing the `r` largest of `θ i + G i` reaches every interior set of
+inclusion probabilities.** `G` is any random vector with integrable entries
+for which ties have probability 0. -/
+theorem exists_inclusion_eq [IsProbabilityMeasure μ] (hG : ∀ i, Measurable fun ω => G ω i)
+    (hGi : ∀ i, Integrable (fun ω => G ω i) μ)
+    (hnt : ∀ θ : ι → ℝ, ∀ᵐ ω ∂μ, NoTies r (θ + G ω))
+    (π : ι → ℝ) (h0 : ∀ i, 0 < π i) (h1 : ∀ i, π i < 1) (hsum : ∑ i, π i = r) :
+    ∃ θ, ∀ i, inclusion μ G r θ i = π i := by
+  have hr : (rsets ι r).Nonempty := by
+    rw [Finset.powersetCard_nonempty]
+    have h : (r : ℝ) ≤ Fintype.card ι := by
+      rw [← hsum]
+      calc ∑ i, π i ≤ ∑ _i : ι, (1 : ℝ) := Finset.sum_le_sum fun i _ => (h1 i).le
+        _ = Fintype.card ι := by simp
+    exact_mod_cast h
+  exact exists_incl_eq (potential hr μ G) (inclusion μ G r)
+    (potential_add_le hr μ hG hGi hnt) (potential_add_const hr μ hG hGi)
+    ⟨_, sum_sub_le_potential hr μ hG hGi⟩ (continuous_potential hr μ hG hGi)
+    (continuous_inclusion hr μ hG hGi hnt) π h0 h1 hsum
 
 end Crush

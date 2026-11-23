@@ -114,4 +114,64 @@ theorem topSum_sub_le (v w : ι → ℝ) : topSum r hr v - topSum r hr w ≤ ∑
           Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ S) fun i _ _ => abs_nonneg _
   linarith
 
+omit [DecidableEq ι] in
+theorem score_le_score_add {v w : ι → ℝ} {ε : ℝ} (hε : 0 ≤ ε) (h : ∀ i, w i ≤ v i + ε)
+    (T : Finset ι) : score w T ≤ score v T + Fintype.card ι * ε := by
+  unfold score
+  have hc : (T.card : ℝ) ≤ Fintype.card ι := by exact_mod_cast Finset.card_le_univ T
+  calc ∑ i ∈ T, w i ≤ ∑ i ∈ T, (v i + ε) := Finset.sum_le_sum fun i _ => h i
+    _ = ∑ i ∈ T, v i + T.card * ε := by
+        rw [Finset.sum_add_distrib, Finset.sum_const, nsmul_eq_mul]
+    _ ≤ ∑ i ∈ T, v i + Fintype.card ι * ε := by nlinarith
+
+include hr in
+omit [DecidableEq ι] in
+/-- **Without ties the choice does not change under small changes of the
+values.** -/
+theorem exists_inTop_iff_of_noTies {v : ι → ℝ} (hv : NoTies r v) :
+    ∃ ε > 0, ∀ w : ι → ℝ, (∀ i, |w i - v i| < ε) → ∀ i, (inTop r w i ↔ inTop r v i) := by
+  classical
+  obtain ⟨S, hS, -⟩ := exists_isTop hr v
+  have hgap : ∀ T ∈ rsets ι r, T ≠ S → score v T < score v S := fun T hT hne =>
+    lt_of_le_of_ne (hS.2 T hT) (hv T hT S hS.1 hne)
+  obtain ⟨δ, hδ, hδgap⟩ : ∃ δ > 0, ∀ T ∈ rsets ι r, T ≠ S → score v T + δ ≤ score v S := by
+    by_cases hne : ((rsets ι r).erase S).Nonempty
+    · obtain ⟨T₀, hT₀, hmin⟩ :=
+        Finset.exists_min_image _ (fun T => score v S - score v T) hne
+      have hT₀' := Finset.mem_erase.1 hT₀
+      refine ⟨score v S - score v T₀, by linarith [hgap T₀ hT₀'.2 hT₀'.1], fun T hT hTS => ?_⟩
+      have := hmin T (Finset.mem_erase.2 ⟨hTS, hT⟩)
+      linarith
+    · exact ⟨1, one_pos, fun T hT hTS => absurd ⟨T, Finset.mem_erase.2 ⟨hTS, hT⟩⟩ hne⟩
+  have hn : (0 : ℝ) ≤ Fintype.card ι := Nat.cast_nonneg _
+  have hden : (0 : ℝ) < 2 * Fintype.card ι + 1 := by positivity
+  refine ⟨δ / (2 * Fintype.card ι + 1), div_pos hδ hden, fun w hw => ?_⟩
+  set ε := δ / (2 * (Fintype.card ι : ℝ) + 1) with hε
+  have hεpos : 0 < ε := div_pos hδ hden
+  have h2 : 2 * (Fintype.card ι * ε) < δ := by
+    have e : ε * (2 * (Fintype.card ι : ℝ) + 1) = δ := by rw [hε]; field_simp
+    nlinarith
+  have hw1 : ∀ i, w i ≤ v i + ε := fun i => by have := abs_lt.1 (hw i); linarith
+  have hw2 : ∀ i, v i ≤ w i + ε := fun i => by have := abs_lt.1 (hw i); linarith
+  have hwgap : ∀ T ∈ rsets ι r, T ≠ S → score w T < score w S := fun T hT hne => by
+    have a := score_le_score_add hεpos.le hw1 T
+    have b := score_le_score_add hεpos.le hw2 S
+    have c := hδgap T hT hne
+    linarith
+  have hSw : IsTop r w S := ⟨hS.1, fun T hT => by
+    by_cases h : T = S
+    · rw [h]
+    · exact (hwgap T hT h).le⟩
+  have huniq : ∀ {u : ι → ℝ}, IsTop r u S →
+      (∀ T ∈ rsets ι r, T ≠ S → score u T < score u S) → ∀ i, (inTop r u i ↔ i ∈ S) := by
+    intro u hu hug i
+    constructor
+    · rintro ⟨T, hT, hiT⟩
+      by_contra hiS
+      have hne : T ≠ S := fun h => hiS (h ▸ hiT)
+      exact absurd (hT.2 S hu.1) (not_le.2 (hug T hT.1 hne))
+    · exact fun hi => ⟨S, hu, hi⟩
+  intro i
+  rw [huniq hSw hwgap i, huniq hS hgap i]
+
 end Crush
