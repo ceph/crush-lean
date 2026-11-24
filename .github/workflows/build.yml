@@ -1,0 +1,24 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # installs the toolchain from lean-toolchain, fetches the Mathlib cache, runs `lake build`
+      - uses: leanprover/lean-action@v1
+      - name: No sorry, no axioms beyond Mathlib's
+        run: |
+          ! grep -rnw sorry Crush/
+          printf 'import Crush\n#print axioms Crush.exists_weights\n#print axioms Crush.Design.exists_proportional_iff\n' > Axioms.lean
+          lake env lean Axioms.lean | tee axioms.txt
+          ! grep -v -E "^'Crush\.[A-Za-z_.]+' depends on axioms: \[propext, Classical\.choice, Quot\.sound\]$" axioms.txt
